@@ -33,6 +33,7 @@ import com.example.bloodbank.R
 import com.example.bloodbank.Screen
 import com.example.bloodbank.UiCustomContents.drawLogo
 import com.example.bloodbank.ui.theme.primary
+import com.example.bloodbank.ui.theme.primaryDark
 import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.google.accompanist.navigation.animation.composable
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController
@@ -49,26 +50,36 @@ fun DashboardScreen(
     var scaffoldState = rememberScaffoldState()
     val scope = rememberCoroutineScope()
     val navController = rememberAnimatedNavController()
+    var selectedNavigation = mutableListOf(
+        remember {
+            mutableStateOf(0)
+        }
+    )
 
     Scaffold(
         scaffoldState = scaffoldState,
         topBar = {
             myAppBar(
                 scaffoldState = scaffoldState,
-                scope = scope
+                scope = scope,
+                selectedNavigation= selectedNavigation
             )
         },
         drawerContent = {
             myAppSideDrawer(
                 scope = scope,
                 scaffoldState = scaffoldState,
-                navController = navController
+                navController = navController,
+                selectedNavigation= selectedNavigation
             )
         },
         modifier = Modifier.fillMaxSize()
     ){
-        Navigation(navController = navController,
-                parentNavController = parentNavController)
+        Navigation(
+            navController = navController,
+            parentNavController = parentNavController,
+            selectedNavigation = selectedNavigation
+        )
     }
 }
 
@@ -77,11 +88,26 @@ fun DashboardScreen(
 @Composable
 fun myAppBar(
     scaffoldState: ScaffoldState,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    selectedNavigation:MutableList<MutableState<Int>>
 ){
-
+    var title by remember {
+        mutableStateOf("hi")
+    }
+    val currentNavigation=selectedNavigation.get(0).value
+    if(currentNavigation==0){
+        title="Blood Point"
+    }else if(currentNavigation==1){
+        title="Profile"
+    }else if(currentNavigation==2){
+        title="Achievements"
+    }else if(currentNavigation==3){
+        title="Find Blood Donor"
+    }else if(currentNavigation==4){
+        title="Nearest Hospitals"
+    }
     TopAppBar(
-        title = { Text(text = "Navigation Drawer", fontSize = 18.sp) },
+        title = { Text(text = title, fontSize = 18.sp) },
         navigationIcon = {
             IconButton(onClick = {
                 scope.launch {
@@ -94,7 +120,7 @@ fun myAppBar(
                 Icon(Icons.Filled.Menu, "")
             }
         },
-        backgroundColor = Color.Green,
+        backgroundColor = primaryDark,
         contentColor = Color.Black
     )
 
@@ -107,7 +133,8 @@ fun myAppBar(
 fun myAppSideDrawer(
     scope: CoroutineScope,
     scaffoldState: ScaffoldState,
-    navController: NavHostController
+    navController: NavHostController,
+    selectedNavigation:MutableList<MutableState<Int>>
 ){
 
     val items = listOf(
@@ -310,7 +337,9 @@ sealed class NavigationItem(var route:String){
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun Navigation(navController: NavHostController,
-parentNavController: NavHostController){
+               parentNavController: NavHostController,
+               selectedNavigation:MutableList<MutableState<Int>>
+){
         AnimatedNavHost(
             navController,
             startDestination = NavigationItem.HomeScreen.route,
@@ -318,27 +347,33 @@ parentNavController: NavHostController){
             exitTransition ={fadeOut(animationSpec = tween(2000), targetAlpha = 0f)}
         ){
             composable(NavigationItem.HomeScreen.route){
+                selectedNavigation.get(0).value=0
                 HomeScreen(navController)
             }
 
             composable(NavigationItem.ProfileScreen.route){
+                selectedNavigation.get(0).value=1
                 ProfileScreen(navController = navController)
             }
 
             composable(NavigationItem.AchievementsScreen.route){
+                selectedNavigation.get(0).value=2
                 AchievementsScreen(navController = navController)
             }
 
             composable(NavigationItem.FindBloodDonorScreen.route){
-                    FindBloodDonorScreen(navController = navController)
+                selectedNavigation.get(0).value=3
+                FindBloodDonorScreen(navController = navController)
             }
 
             composable(NavigationItem.NearestHospitalScreen.route){
-                    NearestHospitalScreen(navController = navController)
+                selectedNavigation.get(0).value=4
+                NearestHospitalScreen(navController = navController)
             }
 
             composable(NavigationItem.Logout.route){
-                    parentNavController.popBackStack()
+                selectedNavigation.get(0).value=5
+                parentNavController.popBackStack()
             }
         }
 }
