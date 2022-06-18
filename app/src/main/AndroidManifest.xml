@@ -24,6 +24,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+<!--        <meta-data-->
+<!--            android:name = "FacebookApiKey"-->
+<!--            android:value = "${FacebookApiKey}"/>-->
+<!--        <meta-data-->
+<!--            android:name = "TwitterApiKey"-->
+<!--            android:value = "${TwitterApiKey}"/>-->
+<!--        <meta-data-->
+<!--            android:name = "FacebookApiSecret"-->
+<!--            android:value = "${FacebookApiSecret}"/>-->
+<!--        <meta-data-->
+<!--            android:name = "TwitterApiSecret"-->
+<!--            android:value = "${TwitterApiSecret}"/>-->
     </application>
 
 </manifest>

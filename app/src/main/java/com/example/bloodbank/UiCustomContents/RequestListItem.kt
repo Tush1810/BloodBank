@@ -13,16 +13,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.bloodbank.Models.CustomerUserData
 import com.example.bloodbank.R
 import com.example.bloodbank.ui.theme.primary
 
 @Composable
-fun RequestListItem() {
+fun RequestListItem(post:CustomerUserData,isPrimaryBackground:Boolean) {
     Box(
         modifier = Modifier
             .height(IntrinsicSize.Min)
             .width(IntrinsicSize.Min)
-            .background(primary)
+            .background(if(isPrimaryBackground) Color(0xFFC13F31) else Color(0xFFFFFFFF))
             .clickable {
 
             }
@@ -52,7 +53,7 @@ fun RequestListItem() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "AB+ ",
+                        text = post.bloodGroup+" ",
                         color = Color(0xFFF8F8F8),
                         fontSize = 12.sp
                     )
@@ -78,7 +79,7 @@ fun RequestListItem() {
                         )
 
                         Text(
-                            text = "+91-0123456789",
+                            text = post.contact,
                             fontSize = 9.sp
                         )
                     }
@@ -92,21 +93,7 @@ fun RequestListItem() {
                         )
 
                         Text(
-                            text = "Yajur Pruthi",
-                            fontSize = 9.sp
-                        )
-                    }
-                    Row(
-                        modifier = Modifier
-                            .wrapContentSize()
-                    ) {
-                        Text(
-                            text = "Contact Number: ",
-                            fontSize = 9.sp
-                        )
-
-                        Text(
-                            text = "+91-0123456789",
+                            text = post.name,
                             fontSize = 9.sp
                         )
                     }
@@ -120,7 +107,7 @@ fun RequestListItem() {
                         )
 
                         Text(
-                            text = "11:30 pm, 17/04/2022",
+                            text = post.time+", "+post.date,
                             fontSize = 9.sp
                         )
                     }
@@ -134,7 +121,7 @@ fun RequestListItem() {
                         )
 
                         Text(
-                            text = "Jitender Pruthi",
+                            text = post.address+", "+post.division,
                             fontSize = 9.sp
                         )
                     }
@@ -147,5 +134,9 @@ fun RequestListItem() {
 @Composable
 @Preview
 fun displayRequestListItem(){
-    RequestListItem()
+    RequestListItem(
+        CustomerUserData("","","",""
+        ,"","","",),
+        true
+    )
 }

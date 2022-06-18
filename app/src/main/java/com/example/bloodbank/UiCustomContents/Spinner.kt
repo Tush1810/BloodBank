@@ -13,19 +13,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.bloodbank.ui.theme.primary
 import com.example.bloodbank.ui.theme.primaryDark
-import kotlin.math.exp
 
 @Composable
 fun NormalSpinner(
-    list:List<String>
+    list:List<String>,
+    spinnerText: MutableState<Int>
 ){
-    var spinnerText by remember { mutableStateOf(list.get(0)) }
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember {
+        mutableStateOf(false)
+    }
     Box(
        modifier = Modifier
            .fillMaxSize()
@@ -42,16 +42,16 @@ fun NormalSpinner(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = spinnerText,
+                text = list.get(spinnerText.value),
                 modifier = Modifier.weight(9f)
             )
             Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = null)
             DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded=false }) {
-                list.forEach { newSpinnerText ->
-                    DropdownMenuItem(onClick = { 
-                        spinnerText=newSpinnerText
+                list.forEachIndexed { index,newSpinnerText ->
+                    DropdownMenuItem(onClick = {
+                        spinnerText.value=index
                         expanded=false
                     }) {
                         if(spinnerText.equals(newSpinnerText)){
@@ -59,7 +59,6 @@ fun NormalSpinner(
                                 text = newSpinnerText,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(primary)
                                     .wrapContentHeight()
                             )
                         } else{
@@ -67,7 +66,6 @@ fun NormalSpinner(
                                 text = newSpinnerText,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(primaryDark)
                                     .wrapContentHeight()
                             )
                         }
@@ -82,5 +80,5 @@ fun NormalSpinner(
 @Composable
 @Preview
 fun displayNormalSpinner(){
-    NormalSpinner(listOf())
+    NormalSpinner(listOf(),remember{ mutableStateOf(0)})
 }

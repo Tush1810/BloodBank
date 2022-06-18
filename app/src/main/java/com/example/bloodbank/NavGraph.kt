@@ -16,7 +16,7 @@ import com.google.accompanist.navigation.animation.composable
 fun setupNavGraph(navController:NavHostController){
     AnimatedNavHost(
         navController = navController,
-        startDestination = Screen.DashboardScreen.route,
+        startDestination = Screen.SplashScreen.route,
         enterTransition = { fadeIn(animationSpec = tween(1000), initialAlpha = 0f) },
         exitTransition ={ fadeOut(animationSpec = tween(1000), targetAlpha = 0f) }
     ){
@@ -48,6 +48,18 @@ fun setupNavGraph(navController:NavHostController){
             route = Screen.DashboardScreen.route
         ){
             DashboardScreen(parentNavController = navController)
+        }
+
+        composable(
+            route = Screen.ProfileScreen.route
+        ){
+            ProfileScreen(navController = navController)
+        }
+
+        composable(
+            route=Screen.PostScreen.route
+        ){
+            PostScreen(navController = navController)
         }
     }
 }

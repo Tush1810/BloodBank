@@ -17,6 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bloodbank.R
+import com.example.bloodbank.ui.theme.colorPrimary
 import com.example.bloodbank.ui.theme.primary
 import java.time.Instant
 import java.util.*
@@ -27,13 +28,14 @@ fun SearchDonorItem(
     contactNumber:String,
     address:String,
     totalDonation:Int,
-    lastDonation:Date
+    lastDonation:String,
+    backGroundColor: Color
 ) {
     Box(
         modifier = Modifier
             .height(IntrinsicSize.Min)
             .width(IntrinsicSize.Min)
-            .background(primary)
+            .background(backGroundColor)
             .clickable {
 
             },
@@ -145,5 +147,5 @@ fun SearchDonorItem(
 @Preview
 fun displaySearchDonorItem(){
     SearchDonorItem("a","a","a",0,
-    Date.from(Instant.now()))
+    "", Color(0xFFFFFFFF))
 }

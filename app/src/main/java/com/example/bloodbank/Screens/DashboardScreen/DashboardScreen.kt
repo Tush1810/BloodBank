@@ -1,7 +1,9 @@
 package com.example.bloodbank.Screens
 
 
+import android.annotation.SuppressLint
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.tween
@@ -12,6 +14,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,19 +22,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.bloodbank.R
 import com.example.bloodbank.Screen
+import com.example.bloodbank.Screens.DashboardScreen.DashboardScreenViewModel
+import com.example.bloodbank.Screens.DashboardScreen.DashboardScreenViewModelFactory
+import com.example.bloodbank.Screens.ProfileScreen.ProfileScreenViewModel
 import com.example.bloodbank.UiCustomContents.drawLogo
+import com.example.bloodbank.ui.theme.colorPrimary
 import com.example.bloodbank.ui.theme.primary
 import com.example.bloodbank.ui.theme.primaryDark
 import com.google.accompanist.navigation.animation.AnimatedNavHost
@@ -40,21 +50,81 @@ import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalAnimationApi::class)
+@SuppressLint("CoroutineCreationDuringComposition")
+@OptIn(ExperimentalAnimationApi::class, ExperimentalMaterialApi::class)
 @Composable
 fun DashboardScreen(
     parentNavController:NavHostController
 ){
+
+
     var scaffoldState = rememberScaffoldState()
     val scope = rememberCoroutineScope()
     val navController = rememberAnimatedNavController()
-    var selectedNavigation = mutableListOf(
-        remember {
-            mutableStateOf(0)
-        }
+
+    val items = listOf(
+        MenuOptions(R.drawable.ic_home,"Home",NavigationItem.HomeScreen.route,0),
+        MenuOptions(R.drawable.ic_profile_overview,"Profile",NavigationItem.ProfileScreen.route,1),
+        MenuOptions(R.drawable.ic_menu_achievements,"Achievements",NavigationItem.AchievementsScreen.route,2),
+        MenuOptions(R.drawable.ic_find_donor,"Find Blood Donor",NavigationItem.FindBloodDonorScreen.route,3),
+        MenuOptions(R.drawable.ic_find_hospital,"Find Nearest Hospital",NavigationItem.NearestHospitalScreen.route,4),
+        MenuOptions(R.drawable.ic_logout,"Logout",NavigationItem.Logout.route,5)
     )
+
+    Log.i("Starting in DashBoard","---------")
+    val list=navController.backQueue
+    list.forEach {
+        it.destination.route?.let { it1 -> Log.i("Entry1111", it1) };
+    }
+    Log.i("Ending in DashBoard","---------")
+
+
+    val viewModel:DashboardScreenViewModel = viewModel(
+        factory = DashboardScreenViewModelFactory()
+    )
+
+    val coroutineScope= rememberCoroutineScope()
+    coroutineScope.launch {
+        viewModel.eventFlow.collect { event ->
+            when(event){
+                is DashboardScreenViewModel.myEvent.NavigateEvent ->{
+                    navController.navigate(event.screenRoute) {
+                        navController.graph.startDestinationRoute?.let { route ->
+                            Log.i("route",route)
+                            popUpTo(route) {
+                                saveState = true
+                            }
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+                is DashboardScreenViewModel.myEvent.NavigateProfileEvent ->{
+                    parentNavController.navigate(Screen.ProfileScreen.route)
+                }
+                is DashboardScreenViewModel.myEvent.CloseSideDrawerEvent ->{
+                    scope.launch {
+                        scaffoldState.drawerState.animateTo(
+                            DrawerValue.Closed,
+                            anim = TweenSpec<Float>(durationMillis = 1000)
+                        )
+                        Log.i("Finished","Finished drawer closing")
+                    }
+                }
+                is DashboardScreenViewModel.myEvent.NavigatePostScreenEvent -> {
+                    parentNavController.navigate(Screen.PostScreen.route)
+                }
+                is DashboardScreenViewModel.myEvent.LogoutEvent -> {
+                    parentNavController.navigate(Screen.LoginScreen.route){
+                        popUpTo(0)
+                    }
+                }
+            }
+        }
+    }
 
     Scaffold(
         scaffoldState = scaffoldState,
@@ -62,23 +132,30 @@ fun DashboardScreen(
             myAppBar(
                 scaffoldState = scaffoldState,
                 scope = scope,
-                selectedNavigation= selectedNavigation
+                viewModel=viewModel
             )
         },
         drawerContent = {
+            DrawerHeader(viewModel.userName,viewModel.userEmail)
             myAppSideDrawer(
-                scope = scope,
-                scaffoldState = scaffoldState,
-                navController = navController,
-                selectedNavigation= selectedNavigation
+                items=items,
+                selectedNavigation = viewModel.selectedNavigation,
+                onItemClick = { item->
+                    viewModel.onItemClick(item)
+                }
             )
+        },
+        floatingActionButton = {
+                               floatingActionButton(
+                                   onClick = {viewModel.fabClicked()}
+                               )
         },
         modifier = Modifier.fillMaxSize()
     ){
         Navigation(
             navController = navController,
             parentNavController = parentNavController,
-            selectedNavigation = selectedNavigation
+            viewModel=viewModel
         )
     }
 }
@@ -89,12 +166,12 @@ fun DashboardScreen(
 fun myAppBar(
     scaffoldState: ScaffoldState,
     scope: CoroutineScope,
-    selectedNavigation:MutableList<MutableState<Int>>
+    viewModel:DashboardScreenViewModel
 ){
     var title by remember {
         mutableStateOf("hi")
     }
-    val currentNavigation=selectedNavigation.get(0).value
+    val currentNavigation=viewModel.selectedNavigation
     if(currentNavigation==0){
         title="Blood Point"
     }else if(currentNavigation==1){
@@ -123,7 +200,16 @@ fun myAppBar(
         backgroundColor = primaryDark,
         contentColor = Color.Black
     )
+}
 
+@Composable
+fun floatingActionButton(onClick:()->Unit){
+    FloatingActionButton(
+        onClick =  onClick ,
+        backgroundColor = colorPrimary
+    ) {
+        Icon(imageVector = Icons.Filled.Add,"")
+    }
 }
 
 
@@ -131,70 +217,18 @@ fun myAppBar(
 @OptIn(ExperimentalAnimationApi::class, ExperimentalMaterialApi::class)
 @Composable
 fun myAppSideDrawer(
-    scope: CoroutineScope,
-    scaffoldState: ScaffoldState,
-    navController: NavHostController,
-    selectedNavigation:MutableList<MutableState<Int>>
+    items:List<MenuOptions>,
+    selectedNavigation: Int,
+    onItemClick:(MenuOptions)->Unit
 ){
-
-    val items = listOf(
-        MenuOptions(R.drawable.ic_home,"Home",NavigationItem.HomeScreen.route,0),
-        MenuOptions(R.drawable.ic_profile_overview,"Profile",NavigationItem.ProfileScreen.route,1),
-        MenuOptions(R.drawable.ic_menu_achievements,"Achievements",NavigationItem.AchievementsScreen.route,2),
-        MenuOptions(R.drawable.ic_find_donor,"Find Blood Donor",NavigationItem.FindBloodDonorScreen.route,3),
-        MenuOptions(R.drawable.ic_find_hospital,"Find Nearest Hospital",NavigationItem.NearestHospitalScreen.route,4),
-        MenuOptions(R.drawable.ic_logout,"Logout",NavigationItem.Logout.route,5)
-    )
-
-    var isSelected=mutableListOf(
-        remember{ mutableStateOf(true)},
-        remember{ mutableStateOf(false)},
-        remember{ mutableStateOf(false)},
-        remember{ mutableStateOf(false)},
-        remember{ mutableStateOf(false)},
-        remember{ mutableStateOf(false)}
-    )
-
-    var selectedIndex by remember{ mutableStateOf(0)}
-
-
-    DrawerHeader()
-
-
         for (i in 0..items.size - 1) {
             var item = items.get(i)
             NavOptions(
                 item = item,
-                isSelected = isSelected,
-                currentIndex = i,
-                onItemClick = { item ->
-                    scope.launch {
-                        scaffoldState.drawerState.animateTo(
-                            DrawerValue.Closed,
-                            anim = TweenSpec<Float>(durationMillis = 1000)
-                        )
-                        Log.i("Finished","Finished drawer closing")
-                    }
-                        navController.navigate(item.route) {
-                            navController.graph.startDestinationRoute?.let { route ->
-                                popUpTo(route) {
-                                    saveState = true
-                                }
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-
-                        isSelected.get(selectedIndex).value = false
-                        selectedIndex = item.index
-                        isSelected.get(selectedIndex).value = true
-                    Log.i("Finished","Finished onClickItem()")
-                    }
+                selectedNavigation = selectedNavigation,
+                onItemClick = onItemClick
             )
-            Log.i("Finished","Finished function")
         }
-
-
 }
 
 
@@ -203,12 +237,11 @@ fun myAppSideDrawer(
 @Composable
 fun NavOptions(
     item:MenuOptions,
-    isSelected:MutableList<MutableState<Boolean>>,
-    currentIndex:Int,
+    selectedNavigation:Int,
     onItemClick:(MenuOptions)->Unit,
 ){
     val backGroundColor by animateColorAsState(
-        targetValue = if(isSelected.get(currentIndex).value){
+        targetValue = if(selectedNavigation==item.index){
             Color.Gray
         }else Color.White,
         animationSpec = tween(1000)
@@ -252,7 +285,7 @@ fun NavOptions(
 }
 
 @Composable
-fun DrawerHeader(){
+fun DrawerHeader(name:String,email:String){
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -275,7 +308,7 @@ fun DrawerHeader(){
                     (id = R.mipmap.blood_bank_ic_launcher_foreground),
                 contentDescription = null)
             Text(
-                text = "Android Studio",
+                text = name,
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
@@ -287,7 +320,7 @@ fun DrawerHeader(){
             )
 
             Text(
-                text = "android.studio@android.com",
+                text = email,
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight(),
@@ -308,7 +341,7 @@ fun displayNavController(){
 @Preview
 fun displayDrawerHeader(){
 
-    DrawerHeader()
+//    DrawerHeader()
 }
 
 @Composable
@@ -338,7 +371,7 @@ sealed class NavigationItem(var route:String){
 @Composable
 fun Navigation(navController: NavHostController,
                parentNavController: NavHostController,
-               selectedNavigation:MutableList<MutableState<Int>>
+               viewModel:DashboardScreenViewModel
 ){
         AnimatedNavHost(
             navController,
@@ -346,35 +379,28 @@ fun Navigation(navController: NavHostController,
             enterTransition = {fadeIn(animationSpec = tween(2000), initialAlpha = 0f)},
             exitTransition ={fadeOut(animationSpec = tween(2000), targetAlpha = 0f)}
         ){
-            composable(NavigationItem.HomeScreen.route){
-                selectedNavigation.get(0).value=0
-                HomeScreen(navController)
-            }
 
-            composable(NavigationItem.ProfileScreen.route){
-                selectedNavigation.get(0).value=1
-                ProfileScreen(navController = navController)
+            composable(NavigationItem.HomeScreen.route){
+                viewModel.selectedNavigation=0
+                HomeScreen(navController)
+
             }
 
             composable(NavigationItem.AchievementsScreen.route){
-                selectedNavigation.get(0).value=2
+                viewModel.selectedNavigation=2
                 AchievementsScreen(navController = navController)
             }
 
             composable(NavigationItem.FindBloodDonorScreen.route){
-                selectedNavigation.get(0).value=3
+                viewModel.selectedNavigation=3
                 FindBloodDonorScreen(navController = navController)
             }
 
             composable(NavigationItem.NearestHospitalScreen.route){
-                selectedNavigation.get(0).value=4
+                viewModel.selectedNavigation=4
                 NearestHospitalScreen(navController = navController)
             }
 
-            composable(NavigationItem.Logout.route){
-                selectedNavigation.get(0).value=5
-                parentNavController.popBackStack()
-            }
         }
 }
 
